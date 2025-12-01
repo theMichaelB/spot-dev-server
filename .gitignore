@@ -1,0 +1,49 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+!*.tfvars.example
+
+# Environment files with secrets
+*.env
+.env.*
+tailscale.env
+tailscale.idp
+
+# Credentials and keys
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*
+*secret*
+password.txt
+
+# AWS
+.aws/
+
+# SSH keys
+id_rsa
+id_ed25519
+*.pub
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp

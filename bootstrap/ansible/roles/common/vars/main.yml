@@ -1,0 +1,10 @@
+---
+# Common role variables
+dev_packages:
+  - git
+  - vim
+  - tmux
+  - htop
+  - tree
+  - make
+  - build-essential

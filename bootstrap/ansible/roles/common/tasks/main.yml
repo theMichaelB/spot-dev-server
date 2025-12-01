@@ -1,0 +1,16 @@
+---
+# Phase 1: Storage and user setup
+- import_tasks: ephemeral.yml
+- import_tasks: users.yml
+
+# Phase 2: Restore backed up data (before software install)
+- import_tasks: restore.yml
+
+# Phase 3: Software installation
+- import_tasks: packages.yml
+- import_tasks: docker.yml
+
+# Phase 4: User tools and finalization
+- import_tasks: backup-scripts.yml
+- import_tasks: backup-timer.yml
+- import_tasks: motd.yml

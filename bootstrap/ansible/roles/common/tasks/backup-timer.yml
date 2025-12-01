@@ -1,0 +1,22 @@
+---
+- name: Install backup-data service
+  ansible.builtin.copy:
+    src: backup-data.service
+    dest: /etc/systemd/system/backup-data.service
+    mode: '0644'
+
+- name: Install backup-data timer
+  ansible.builtin.copy:
+    src: backup-data.timer
+    dest: /etc/systemd/system/backup-data.timer
+    mode: '0644'
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Enable and start backup-data timer
+  ansible.builtin.systemd:
+    name: backup-data.timer
+    state: started
+    enabled: true

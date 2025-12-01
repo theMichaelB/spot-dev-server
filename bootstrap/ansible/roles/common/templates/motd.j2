@@ -1,0 +1,54 @@
+#!/bin/bash
+# Dynamic MOTD - Software verification
+
+echo ""
+echo "=========================================="
+echo "  Devbox Status"
+echo "=========================================="
+echo ""
+
+# Check functions
+check_installed() {
+    local name="$1"
+    local cmd="$2"
+    if command -v "$cmd" &> /dev/null; then
+        local version=$("$cmd" --version 2>/dev/null | head -n1 || echo "installed")
+        printf "  %-15s ✓ %s\n" "$name" "$version"
+    else
+        printf "  %-15s ✗ NOT INSTALLED\n" "$name"
+    fi
+}
+
+check_service() {
+    local name="$1"
+    local service="$2"
+    if systemctl is-active --quiet "$service" 2>/dev/null; then
+        printf "  %-15s ✓ running\n" "$name"
+    else
+        printf "  %-15s ✗ not running\n" "$name"
+    fi
+}
+
+echo "Software:"
+check_installed "AWS CLI" "aws"
+check_installed "Docker" "docker"
+check_installed "Ansible" "ansible"
+check_installed "Claude" "claude"
+check_installed "Git" "git"
+check_installed "Tailscale" "tailscale"
+
+echo ""
+echo "Services:"
+check_service "Docker" "docker"
+check_service "Tailscale" "tailscaled"
+
+echo ""
+echo "Network:"
+if command -v tailscale &> /dev/null; then
+    TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || echo "not connected")
+    printf "  %-15s %s\n" "Tailscale IP" "$TAILSCALE_IP"
+fi
+
+echo ""
+echo "=========================================="
+echo ""

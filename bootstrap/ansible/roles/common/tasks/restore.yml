@@ -1,0 +1,46 @@
+---
+- name: Create restore scripts directory
+  ansible.builtin.file:
+    path: /opt/bootstrap/restore
+    state: directory
+    mode: '0755'
+
+- name: Install restore-config script
+  ansible.builtin.copy:
+    src: restore-config.sh
+    dest: /opt/bootstrap/restore/restore-config.sh
+    mode: '0755'
+
+- name: Install restore-data script
+  ansible.builtin.copy:
+    src: restore-data.sh
+    dest: /opt/bootstrap/restore/restore-data.sh
+    mode: '0755'
+
+- name: Run config restore
+  ansible.builtin.command: /opt/bootstrap/restore/restore-config.sh
+  register: config_restore
+  changed_when: "'Restoring' in config_restore.stdout"
+
+- name: Show config restore output
+  ansible.builtin.debug:
+    var: config_restore.stdout_lines
+  when: config_restore.stdout_lines | length > 0
+
+- name: Run data restore
+  ansible.builtin.command: /opt/bootstrap/restore/restore-data.sh
+  register: data_restore
+  changed_when: "'Restoring' in data_restore.stdout"
+
+- name: Show data restore output
+  ansible.builtin.debug:
+    var: data_restore.stdout_lines
+  when: data_restore.stdout_lines | length > 0
+
+- name: Ensure debian owns restored files
+  ansible.builtin.file:
+    path: /home/debian
+    owner: debian
+    group: debian
+    recurse: true
+  when: config_restore.changed or data_restore.changed

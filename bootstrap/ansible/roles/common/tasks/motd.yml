@@ -1,0 +1,14 @@
+---
+- name: Remove default MOTD files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/motd
+    - /etc/update-motd.d/10-uname
+
+- name: Install dynamic MOTD script
+  ansible.builtin.template:
+    src: motd.j2
+    dest: /etc/update-motd.d/10-devbox-status
+    mode: '0755'

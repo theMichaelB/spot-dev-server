@@ -1,0 +1,7 @@
+---
+- name: Configure devbox
+  hosts: local
+  become: true
+
+  roles:
+    - common

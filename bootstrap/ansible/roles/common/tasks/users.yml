@@ -1,0 +1,12 @@
+---
+# User setup tasks
+# Note: Adding debian to docker group is done in docker.yml after Docker is installed
+
+- name: Ensure debian user exists
+  ansible.builtin.user:
+    name: debian
+    uid: 1000
+    group: debian
+    home: /home/debian
+    shell: /bin/bash
+    state: present

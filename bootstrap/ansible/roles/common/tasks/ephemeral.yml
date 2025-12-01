@@ -1,0 +1,103 @@
+---
+- name: Check for NVMe instance store devices
+  ansible.builtin.shell: |
+    lsblk -d -o NAME,MODEL -n | grep "Instance Storage" | awk '{print "/dev/"$1}' | head -1
+  register: nvme_device
+  changed_when: false
+  failed_when: false
+
+- name: Set ephemeral device fact
+  ansible.builtin.set_fact:
+    ephemeral_device: "{{ nvme_device.stdout | trim }}"
+
+- name: Check if ephemeral device exists
+  ansible.builtin.stat:
+    path: "{{ ephemeral_device }}"
+  register: ephemeral_stat
+  when: ephemeral_device | length > 0
+
+- name: Check if /home is already mounted from ephemeral
+  ansible.builtin.shell: |
+    mount | grep -q "{{ ephemeral_device }}.* on /home" && echo "mounted" || echo "not_mounted"
+  register: home_mount_check
+  changed_when: false
+  when: ephemeral_device | length > 0
+
+- name: Configure ephemeral storage for /home
+  when:
+    - ephemeral_device | length > 0
+    - ephemeral_stat.stat.exists | default(false)
+    - home_mount_check.stdout | default('') == 'not_mounted'
+  block:
+    - name: Stop user sessions (if any)
+      ansible.builtin.shell: |
+        pkill -u debian || true
+      changed_when: false
+      failed_when: false
+
+    - name: Create filesystem on ephemeral device
+      ansible.builtin.filesystem:
+        fstype: ext4
+        dev: "{{ ephemeral_device }}"
+        opts: -L ephemeral-home
+
+    - name: Create temporary mount point
+      ansible.builtin.file:
+        path: /mnt/ephemeral
+        state: directory
+        mode: '0755'
+
+    - name: Mount ephemeral device temporarily
+      ansible.posix.mount:
+        path: /mnt/ephemeral
+        src: "{{ ephemeral_device }}"
+        fstype: ext4
+        state: mounted
+
+    - name: Copy existing /home contents to ephemeral
+      ansible.builtin.shell: |
+        rsync -a /home/ /mnt/ephemeral/
+      changed_when: true
+
+    - name: Unmount temporary mount
+      ansible.posix.mount:
+        path: /mnt/ephemeral
+        state: unmounted
+
+    - name: Remove temporary mount point
+      ansible.builtin.file:
+        path: /mnt/ephemeral
+        state: absent
+
+    - name: Mount ephemeral device as /home
+      ansible.posix.mount:
+        path: /home
+        src: "{{ ephemeral_device }}"
+        fstype: ext4
+        opts: defaults,noatime
+        state: mounted
+
+    - name: Add /home mount to fstab
+      ansible.posix.mount:
+        path: /home
+        src: "{{ ephemeral_device }}"
+        fstype: ext4
+        opts: defaults,noatime
+        state: present
+
+    - name: Ensure debian home directory exists with correct permissions
+      ansible.builtin.file:
+        path: /home/debian
+        state: directory
+        owner: debian
+        group: debian
+        mode: '0755'
+
+- name: Log ephemeral storage status
+  ansible.builtin.debug:
+    msg: >-
+      {% if ephemeral_device | length > 0 and ephemeral_stat.stat.exists | default(false) %}
+      Ephemeral storage configured: {{ ephemeral_device }} mounted as /home
+      {% else %}
+      No ephemeral storage detected, using root filesystem for /home
+      {% endif %}

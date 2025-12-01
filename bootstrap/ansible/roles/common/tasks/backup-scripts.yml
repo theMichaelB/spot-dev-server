@@ -1,0 +1,49 @@
+---
+- name: Create user bin directory
+  ansible.builtin.file:
+    path: /home/debian/bin
+    state: directory
+    owner: debian
+    group: debian
+    mode: '0755'
+
+- name: Install backup-config script
+  ansible.builtin.copy:
+    src: backup-config.sh
+    dest: /home/debian/bin/backup-config
+    owner: debian
+    group: debian
+    mode: '0755'
+
+- name: Install backup-data script
+  ansible.builtin.copy:
+    src: backup-data.sh
+    dest: /home/debian/bin/backup-data
+    owner: debian
+    group: debian
+    mode: '0755'
+
+- name: Install restore-config script
+  ansible.builtin.copy:
+    src: restore-config.sh
+    dest: /home/debian/bin/restore-config
+    owner: debian
+    group: debian
+    mode: '0755'
+
+- name: Install restore-data script
+  ansible.builtin.copy:
+    src: restore-data.sh
+    dest: /home/debian/bin/restore-data
+    owner: debian
+    group: debian
+    mode: '0755'
+
+- name: Ensure ~/bin is in PATH via .profile
+  ansible.builtin.lineinfile:
+    path: /home/debian/.profile
+    line: 'export PATH="$HOME/bin:$PATH"'
+    create: true
+    owner: debian
+    group: debian
+    mode: '0644'

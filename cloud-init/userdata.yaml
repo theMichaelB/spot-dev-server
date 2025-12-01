@@ -1,0 +1,55 @@
+#cloud-config
+
+# Set hostname
+hostname: aws-devbox
+fqdn: aws-devbox.dvp.sh
+manage_etc_hosts: true
+
+# Set default user to debian
+system_info:
+  default_user:
+    name: debian
+    lock_passwd: true
+    gecos: Debian
+    groups: [adm, audio, cdrom, dialout, dip, floppy, netdev, plugdev, sudo, video]
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    shell: /bin/bash
+
+# Install packages
+package_update: true
+package_upgrade: true
+packages:
+  - curl
+  - jq
+  - unzip
+  - python3
+  - python3-pip
+  - ansible
+  - ca-certificates
+  - gnupg
+  - restic
+  - rsync
+
+
+# Run commands
+runcmd:
+  # Install AWS CLI v2 (needed for S3 sync)
+  - |
+    ARCH=$(uname -m)
+    if [ "$ARCH" = "aarch64" ]; then
+      curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o /tmp/awscliv2.zip
+    else
+      curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+    fi
+    unzip -q /tmp/awscliv2.zip -d /tmp
+    /tmp/aws/install
+    rm -rf /tmp/aws /tmp/awscliv2.zip
+
+  # Download bootstrap from S3 and run
+  - |
+    mkdir -p /opt/bootstrap
+    aws s3 sync s3://dvp-devbox/scripts/ /opt/bootstrap/scripts/ --region eu-west-2
+    aws s3 sync s3://dvp-devbox/ansible/ /opt/bootstrap/ansible/ --region eu-west-2
+    aws s3 cp s3://dvp-devbox/bootstrap.sh /opt/bootstrap/bootstrap.sh --region eu-west-2
+    chmod +x /opt/bootstrap/bootstrap.sh /opt/bootstrap/scripts/*.sh
+    /opt/bootstrap/bootstrap.sh
