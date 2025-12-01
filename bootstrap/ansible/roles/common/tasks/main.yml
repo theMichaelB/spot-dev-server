@@ -2,6 +2,7 @@
 # Phase 1: Storage and user setup
 - import_tasks: ephemeral.yml
 - import_tasks: users.yml
+- import_tasks: ssh-host-keys.yml
 
 # Phase 2: Restore backed up data (before software install)
 - import_tasks: restore.yml

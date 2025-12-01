@@ -27,3 +27,9 @@ variable "root_volume_size" {
   type        = number
   default     = 16
 }
+
+variable "instance_profile_name" {
+  description = "Name of the IAM instance profile to attach"
+  type        = string
+  default     = "devbox-spot-common"
+}

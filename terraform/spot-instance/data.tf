@@ -37,7 +37,7 @@ data "aws_subnets" "default" {
   }
 }
 
-# Get the IAM instance profile from the iam module
+# Get the IAM instance profile
 data "aws_iam_instance_profile" "devbox" {
-  name = "devbox-spot-common"
+  name = var.instance_profile_name
 }

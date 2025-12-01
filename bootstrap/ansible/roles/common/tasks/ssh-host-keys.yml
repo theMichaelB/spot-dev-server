@@ -1,0 +1,76 @@
+---
+- name: Check if SSH host keys exist in SSM
+  ansible.builtin.command: >
+    aws ssm get-parameter
+    --name /devbox/ssh/ssh_host_ed25519_key
+    --region eu-west-2
+    --query 'Parameter.Value'
+    --output text
+  register: ssh_key_check
+  changed_when: false
+  failed_when: false
+
+- name: Install SSH host keys from SSM
+  when: ssh_key_check.rc == 0
+  block:
+    - name: Fetch SSH private keys from SSM
+      ansible.builtin.shell: |
+        aws ssm get-parameter \
+          --name "/devbox/ssh/ssh_host_{{ item }}_key" \
+          --with-decryption \
+          --region eu-west-2 \
+          --query 'Parameter.Value' \
+          --output text > /etc/ssh/ssh_host_{{ item }}_key
+      loop:
+        - rsa
+        - ecdsa
+        - ed25519
+      no_log: true
+
+    - name: Fetch SSH public keys from SSM
+      ansible.builtin.shell: |
+        aws ssm get-parameter \
+          --name "/devbox/ssh/ssh_host_{{ item }}_key.pub" \
+          --region eu-west-2 \
+          --query 'Parameter.Value' \
+          --output text > /etc/ssh/ssh_host_{{ item }}_key.pub
+      loop:
+        - rsa
+        - ecdsa
+        - ed25519
+
+    - name: Set permissions on private keys
+      ansible.builtin.file:
+        path: "/etc/ssh/ssh_host_{{ item }}_key"
+        owner: root
+        group: root
+        mode: '0600'
+      loop:
+        - rsa
+        - ecdsa
+        - ed25519
+
+    - name: Set permissions on public keys
+      ansible.builtin.file:
+        path: "/etc/ssh/ssh_host_{{ item }}_key.pub"
+        owner: root
+        group: root
+        mode: '0644'
+      loop:
+        - rsa
+        - ecdsa
+        - ed25519
+
+    - name: Restart SSH service to load new keys
+      ansible.builtin.systemd:
+        name: ssh
+        state: restarted
+
+- name: Log SSH host key status
+  ansible.builtin.debug:
+    msg: >-
+      {% if ssh_key_check.rc == 0 %}
+      SSH host keys installed from SSM
+      {% else %}
+      No SSH host keys in SSM, using system-generated keys
+      {% endif %}
